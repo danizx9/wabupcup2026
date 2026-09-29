@@ -191,6 +191,7 @@ export interface CustomDbConfig {
 }
 
 let dbInitPromise: Promise<boolean> | null = null;
+let lastFailedAttempt = 0;
 
 export async function ensureDbConnected(): Promise<boolean> {
   if (isMySqlConnected && pool) {
@@ -202,15 +203,27 @@ export async function ensureDbConnected(): Promise<boolean> {
     return false;
   }
 
+  // Avoid repetitive timeout stalls when database is unreachable
+  if (Date.now() - lastFailedAttempt < 30000) {
+    return false;
+  }
+
   if (!dbInitPromise) {
-    dbInitPromise = initDatabaseConnection().finally(() => {
+    dbInitPromise = initDatabaseConnection().then(res => {
+      if (!res) {
+        lastFailedAttempt = Date.now();
+      } else {
+        lastFailedAttempt = 0;
+      }
+      return res;
+    }).finally(() => {
       dbInitPromise = null;
     });
   }
 
-  // Guarantee max 3.5 seconds wait time to prevent Vercel Serverless Function timeouts
+  // Guarantee max 2.5 seconds wait time to prevent blocking requests
   const timeoutPromise = new Promise<boolean>((resolve) => {
-    setTimeout(() => resolve(isMySqlConnected), 3500);
+    setTimeout(() => resolve(isMySqlConnected), 2500);
   });
 
   try {
@@ -221,6 +234,7 @@ export async function ensureDbConnected(): Promise<boolean> {
 }
 
 export async function initDatabaseConnection(customConfig?: CustomDbConfig): Promise<boolean> {
+  lastFailedAttempt = 0;
   // If no customConfig provided, check if we have a saved config on disk
   const effectiveConfig = customConfig || loadSavedDbConfig();
 

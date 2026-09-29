@@ -8,7 +8,7 @@ export async function exportRegistrationsToExcel(
   const XLSX = await import('xlsx');
   const exportData = registrations.map((r, index) => {
     const docSummary: string[] = [];
-    if (r.documents?.suratKeterangan) docSummary.push('Surat Ket');
+    if (r.documents?.suratKeterangan && r.category !== 'UMUM') docSummary.push('Surat Ket');
     if (r.documents?.suratPernyataan) docSummary.push('Surat Pernyataan');
     if (r.documents?.formulirPemain) docSummary.push('Form Pemain');
     if (r.documents?.aktaKelahiran) docSummary.push('Akta SD');

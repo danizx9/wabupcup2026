@@ -300,14 +300,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       alert('Mohon unggah Logo Tim / Klub resmi! (Wajib)');
       return;
     }
-    if (!docs.suratKeterangan) {
+    if (!isUmum && !docs.suratKeterangan) {
       const keteranganLabel = isSchool
         ? 'Surat Keterangan / Izin Sekolah (PDF)'
         : isInstansi
         ? 'Surat Tugas / Keterangan Instansi (PDF)'
-        : isDesa
-        ? 'Surat Keterangan Kepala Desa / Lurah (PDF)'
-        : 'Surat Rekomendasi / Keterangan Klub (PDF)';
+        : 'Surat Keterangan Kepala Desa / Lurah (PDF)';
       alert(`Mohon lampirkan ${keteranganLabel}! (Wajib)`);
       return;
     }
@@ -881,34 +879,34 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
-                {/* 1. SURAT KETERANGAN SEKOLAH / INSTANSI / DESA */}
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                    {category === 'SD' || category === 'SMP' || category === 'SMA'
-                      ? 'Surat Keterangan / Izin Sekolah (PDF)'
-                      : category === 'INSTANSI'
-                      ? 'Surat Tugas / Keterangan Instansi (PDF)'
-                      : category === 'DESA'
-                      ? 'Surat Keterangan Kepala Desa/Lurah (PDF)'
-                      : 'Surat Rekomendasi / Keterangan Klub (PDF)'}
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    onChange={e => handleFileUpload('suratKeterangan', e.target.files?.[0] || null)}
-                    className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-red-600 file:text-white file:text-xs file:font-semibold hover:file:bg-red-700 cursor-pointer"
-                  />
-                  {docs.suratKeterangan && (
-                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 flex items-center space-x-1">
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>{docs.suratKeterangan.name} ({docs.suratKeterangan.size})</span>
-                    </p>
-                  )}
-                  {uploadErrors.suratKeterangan && (
-                    <p className="text-[11px] text-red-500 font-medium mt-1">{uploadErrors.suratKeterangan}</p>
-                  )}
-                </div>
+                {/* 1. SURAT KETERANGAN SEKOLAH / INSTANSI / DESA (Tidak diperlukan untuk Kategori UMUM) */}
+                {category !== 'UMUM' && (
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                      {category === 'SD' || category === 'SMP' || category === 'SMA'
+                        ? 'Surat Keterangan / Izin Sekolah (PDF)'
+                        : category === 'INSTANSI'
+                        ? 'Surat Tugas / Keterangan Instansi (PDF)'
+                        : 'Surat Keterangan Kepala Desa/Lurah (PDF)'}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      onChange={e => handleFileUpload('suratKeterangan', e.target.files?.[0] || null)}
+                      className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-red-600 file:text-white file:text-xs file:font-semibold hover:file:bg-red-700 cursor-pointer"
+                    />
+                    {docs.suratKeterangan && (
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 flex items-center space-x-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>{docs.suratKeterangan.name} ({docs.suratKeterangan.size})</span>
+                      </p>
+                    )}
+                    {uploadErrors.suratKeterangan && (
+                      <p className="text-[11px] text-red-500 font-medium mt-1">{uploadErrors.suratKeterangan}</p>
+                    )}
+                  </div>
+                )}
 
                 {/* 2. SURAT PERNYATAAN BERMATERAI */}
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
