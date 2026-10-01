@@ -185,10 +185,11 @@ export const Hero: React.FC<HeroProps> = ({ onOpenRegister, onOpenRegistration, 
             </div>
           </div>
         </div>
-
-        {/* 4 STATS CARDS */}
-        <div className="mt-12 grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center space-x-4">
+        {/* 3 STATS CARDS */}
+        <div className="mt-12 grid grid-cols-2 md:flex md:flex-wrap md:justify-center lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+          
+          {/* CARD 1: TOTAL HADIAH */}
+          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center space-x-4 w-full md:w-[calc(33.333%-1rem)] md:min-w-[240px] lg:w-auto">
             <div className="w-12 h-12 rounded-xl bg-red-950/80 border border-red-700/50 flex items-center justify-center text-red-400 shrink-0">
               <Trophy className="w-6 h-6" />
             </div>
@@ -202,7 +203,8 @@ export const Hero: React.FC<HeroProps> = ({ onOpenRegister, onOpenRegistration, 
             </div>
           </div>
 
-          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center space-x-4">
+          {/* CARD 2: KATEGORI */}
+          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center space-x-4 w-full md:w-[calc(33.333%-1rem)] md:min-w-[240px] lg:w-auto">
             <div className="w-12 h-12 rounded-xl bg-blue-950/80 border border-blue-700/50 flex items-center justify-center text-blue-400 shrink-0">
               <Sparkles className="w-6 h-6" />
             </div>
@@ -216,19 +218,8 @@ export const Hero: React.FC<HeroProps> = ({ onOpenRegister, onOpenRegistration, 
             </div>
           </div>
 
-          {/* <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-700/50 flex items-center justify-center text-emerald-400 shrink-0">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <span className="block text-2xl sm:text-3xl font-heading font-bold text-white leading-none">
-                {totalTeamsCount} TIM
-              </span>
-              <p className="text-xs text-slate-400 font-medium mt-1">{approvedTeamsCount} Tim Terverifikasi</p>
-            </div>
-          </div> */}
-
-          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center space-x-4">
+          {/* CARD 3: VENUE */}
+          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center space-x-4 col-span-2 md:w-[calc(33.333%-1rem)] md:min-w-[240px] lg:w-auto">
             <div className="w-12 h-12 rounded-xl bg-amber-950/80 border border-amber-700/50 flex items-center justify-center text-amber-400 shrink-0">
               <MapPin className="w-6 h-6" />
             </div>
@@ -239,7 +230,9 @@ export const Hero: React.FC<HeroProps> = ({ onOpenRegister, onOpenRegistration, 
               <p className="text-xs text-slate-400 font-medium mt-1 truncate" title={config.venueName}>{config.venueName}</p>
             </div>
           </div>
+
         </div>
+
 
       </div>
     </div>
