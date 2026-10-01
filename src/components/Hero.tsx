@@ -216,7 +216,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenRegister, onOpenRegistration, 
             </div>
           </div>
 
-          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center space-x-4">
+          {/* <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center space-x-4">
             <div className="w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-700/50 flex items-center justify-center text-emerald-400 shrink-0">
               <Users className="w-6 h-6" />
             </div>
@@ -226,7 +226,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenRegister, onOpenRegistration, 
               </span>
               <p className="text-xs text-slate-400 font-medium mt-1">{approvedTeamsCount} Tim Terverifikasi</p>
             </div>
-          </div>
+          </div> */}
 
           <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 sm:p-5 flex items-center space-x-4">
             <div className="w-12 h-12 rounded-xl bg-amber-950/80 border border-amber-700/50 flex items-center justify-center text-amber-400 shrink-0">
