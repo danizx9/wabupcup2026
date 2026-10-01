@@ -17,7 +17,16 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=86400, stale-while-revalidate=604800"
+          "value": "public, max-age=604800, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/api/media/view/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400, immutable"
         }
       ]
     },
@@ -37,7 +46,7 @@
       "destination": "/api"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/((?!api/|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]
