@@ -196,6 +196,16 @@ apiRouter.get('/categories', async (req: Request, res: Response) => {
   res.json(categories);
 });
 
+apiRouter.post('/categories/sync-quota', async (req: Request, res: Response) => {
+  try {
+    await Database.syncCategoryRegisteredCounts();
+    const categories = await Database.getCategories();
+    res.json({ success: true, categories });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message });
+  }
+});
+
 apiRouter.post('/categories', async (req: Request, res: Response) => {
   try {
     const saved = await Database.saveCategory(req.body);
@@ -251,8 +261,28 @@ apiRouter.post('/registrations', async (req: Request, res: Response) => {
     const now = new Date();
     const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     
-    // Fetch latest registrations directly from database
-    const existing = await Database.getRegistrations();
+    // Fetch latest registrations & categories directly from database
+    const [existing, categories] = await Promise.all([
+      Database.getRegistrations(),
+      Database.getCategories(),
+    ]);
+
+    // Strict quota check: Reject if category has reached its maximum quota
+    const targetCat = categories.find(
+      c => String(c.id).trim().toUpperCase() === String(data.category).trim().toUpperCase()
+    );
+    if (targetCat) {
+      const activeInCat = existing.filter(
+        r => r.category && String(r.category).trim().toUpperCase() === String(data.category).trim().toUpperCase() && r.status !== 'REJECTED'
+      );
+      if (activeInCat.length >= targetCat.maxTeams) {
+        return res.status(400).json({
+          error: `Kuota pendaftaran untuk kategori ${targetCat.name || data.category} telah penuh (${targetCat.maxTeams} tim)! Pendaftaran untuk kategori ini sudah ditutup.`,
+        });
+      }
+    }
+    
+    // Check if client-provided regCode is non-empty AND genuinely unused
     
     // Check if client-provided regCode is non-empty AND genuinely unused
     const candidateCode = typeof data.regCode === 'string' ? data.regCode.trim().toUpperCase() : '';

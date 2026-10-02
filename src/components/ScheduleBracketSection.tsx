@@ -18,7 +18,8 @@ import {
   UserCheck,
   Building,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Lock
 } from 'lucide-react';
 
 interface ScheduleBracketSectionProps {
@@ -64,6 +65,8 @@ export const ScheduleBracketSection: React.FC<ScheduleBracketSectionProps> = ({
   const displayFinals = finalMatches;
 
   const currentCatDetail = categories.find(c => c.id === selectedCat);
+  const selectedCatCount = Math.max(catRegistrations.length, currentCatDetail?.registeredTeamsCount || 0);
+  const isSelectedCatFull = currentCatDetail ? selectedCatCount >= currentCatDetail.maxTeams : false;
 
   const bgConfig = config.sectionsBackgrounds?.bracket;
   const isCustomImage = bgConfig?.mode === 'IMAGE';
@@ -208,12 +211,22 @@ export const ScheduleBracketSection: React.FC<ScheduleBracketSectionProps> = ({
               </p>
               {onOpenRegister && (
                 <div className="pt-2">
-                  <button
-                    onClick={() => onOpenRegister(selectedCat)}
-                    className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-red-950/50 transition cursor-pointer"
-                  >
-                    Daftarkan Tim {selectedCat} Sekarang
-                  </button>
+                  {isSelectedCatFull ? (
+                    <button
+                      disabled
+                      className="px-6 py-2.5 rounded-xl bg-slate-800 text-slate-500 font-bold text-xs uppercase tracking-wider border border-slate-700 cursor-not-allowed flex items-center justify-center space-x-2 mx-auto"
+                    >
+                      <Lock className="w-4 h-4 text-amber-500" />
+                      <span>Kuota Tim {selectedCat} Penuh (Ditutup)</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onOpenRegister(selectedCat)}
+                      className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-red-950/50 transition cursor-pointer"
+                    >
+                      Daftarkan Tim {selectedCat} Sekarang
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -640,15 +653,22 @@ export const ScheduleBracketSection: React.FC<ScheduleBracketSectionProps> = ({
 
               <div className="flex items-center space-x-3 text-xs w-full sm:w-auto justify-between sm:justify-end">
                 <span className="text-slate-500 dark:text-slate-400">
-                  Total Terdaftar: <strong className="text-slate-900 dark:text-white">{catRegistrations.length} Tim</strong> ({currentCatDetail?.maxTeams || 16} Maksimal)
+                  Total Terdaftar: <strong className="text-slate-900 dark:text-white">{selectedCatCount} Tim</strong> ({currentCatDetail?.maxTeams || 16} Maksimal)
                 </span>
                 {onOpenRegister && (
-                  <button
-                    onClick={() => onOpenRegister(selectedCat)}
-                    className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider transition flex items-center space-x-1.5 shadow-sm cursor-pointer shrink-0"
-                  >
-                    <span>+ Daftarkan Tim {selectedCat}</span>
-                  </button>
+                  isSelectedCatFull ? (
+                    <span className="px-3 py-1.5 rounded-lg bg-red-950/80 text-red-300 border border-red-500/30 text-[11px] font-bold tracking-wider uppercase flex items-center space-x-1.5 shrink-0">
+                      <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Kuota Penuh</span>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => onOpenRegister(selectedCat)}
+                      className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs uppercase tracking-wider transition flex items-center space-x-1.5 shadow-sm cursor-pointer shrink-0"
+                    >
+                      <span>+ Daftarkan Tim {selectedCat}</span>
+                    </button>
+                  )
                 )}
               </div>
             </div>
@@ -666,12 +686,19 @@ export const ScheduleBracketSection: React.FC<ScheduleBracketSectionProps> = ({
                     : `Belum ada tim yang mendaftar pada kategori ${selectedCat}.`}
                 </p>
                 {onOpenRegister && (
-                  <button
-                    onClick={() => onOpenRegister(selectedCat)}
-                    className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md transition"
-                  >
-                    Jadilah Tim Pertama yang Mendaftar
-                  </button>
+                  isSelectedCatFull ? (
+                    <span className="px-4 py-2 rounded-xl bg-red-950/80 text-red-300 border border-red-500/30 text-xs font-bold uppercase inline-flex items-center space-x-2">
+                      <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>Kuota Kategori {selectedCat} Telah Penuh</span>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => onOpenRegister(selectedCat)}
+                      className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                    >
+                      Jadilah Tim Pertama yang Mendaftar
+                    </button>
+                  )
                 )}
               </div>
             ) : (

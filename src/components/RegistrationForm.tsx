@@ -45,13 +45,20 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   // Helper to calculate real-time registered count for a category
   const getCategoryCount = (catId: TournamentCategory) => {
-    const activeRegs = registrations.filter(r => r.category === catId && r.status !== 'REJECTED');
-    return activeRegs.length;
+    const activeRegs = registrations.filter(
+      r => r.category && String(r.category).trim().toUpperCase() === String(catId).trim().toUpperCase() && r.status !== 'REJECTED'
+    );
+    const catObj = categories.find(
+      c => String(c.id).trim().toUpperCase() === String(catId).trim().toUpperCase()
+    );
+    return Math.max(activeRegs.length, catObj?.registeredTeamsCount || 0);
   };
 
   // Helper to determine if a category's quota is full
   const isCategoryFull = (catId: TournamentCategory) => {
-    const catObj = categories.find(c => c.id === catId);
+    const catObj = categories.find(
+      c => String(c.id).trim().toUpperCase() === String(catId).trim().toUpperCase()
+    );
     if (!catObj) return false;
     const count = getCategoryCount(catId);
     return count >= catObj.maxTeams;
@@ -70,7 +77,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const formattedWa = cleanPhone.startsWith('0') ? `62${cleanPhone.slice(1)}` : cleanPhone;
 
   const [category, setCategory] = useState<TournamentCategory>(() => {
-    if (categories.some(c => c.id === preselectedCategory && !isCategoryFull(c.id))) {
+    if (categories.some(c => String(c.id).trim().toUpperCase() === String(preselectedCategory).trim().toUpperCase() && !isCategoryFull(c.id))) {
       return preselectedCategory;
     }
     return availableCategories[0]?.id || 'SMA';
@@ -79,8 +86,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   // Sync category selection whenever modal opens or category availability changes
   useEffect(() => {
     if (isOpen) {
-      if (preselectedCategory && availableCategories.some(c => c.id === preselectedCategory)) {
-        setCategory(preselectedCategory);
+      if (preselectedCategory && availableCategories.some(c => String(c.id).trim().toUpperCase() === String(preselectedCategory).trim().toUpperCase())) {
+        const matched = availableCategories.find(c => String(c.id).trim().toUpperCase() === String(preselectedCategory).trim().toUpperCase());
+        if (matched) setCategory(matched.id);
       } else if (availableCategories.length > 0 && !availableCategories.some(c => c.id === category)) {
         setCategory(availableCategories[0].id);
       }
@@ -651,8 +659,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     </label>
                     {currentCatDetail && (
                       <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                        Sisa {Math.max(0, currentCatDetail.maxTeams - getCategoryCount(currentCatDetail.id))} 
-                         {/* Slot ({currentCatDetail.maxTeams} Tim) */}
+                        Sisa {Math.max(0, currentCatDetail.maxTeams - getCategoryCount(currentCatDetail.id))} Slot ({getCategoryCount(currentCatDetail.id)}/{currentCatDetail.maxTeams} Tim)
                       </span>
                     )}
                   </div>
@@ -667,9 +674,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                       const sisa = Math.max(0, c.maxTeams - count);
                       return (
                         <option key={c.id} value={c.id}>
-                          {c.name} — Biaya: Rp {c.registrationFee.toLocaleString('id-ID')}
-                           {/* (Sisa {sisa} Slot) */}
-                           
+                          {c.name} — Rp {c.registrationFee.toLocaleString('id-ID')} (Sisa {sisa} Slot)
                         </option>
                       );
                     })}

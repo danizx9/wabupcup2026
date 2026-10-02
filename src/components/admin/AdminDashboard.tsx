@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTournament } from '../../context/TournamentContext';
+import { ApiService } from '../../services/api';
 import {
   AdminRole,
   AdminUser,
@@ -105,6 +106,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     currentAdmin,
     loginAdmin,
     logoutAdmin,
+    refreshDataFromServer,
+    syncCategoryQuotas,
     registrations,
     updateRegistration,
     updateRegistrationStatus,
@@ -296,8 +299,60 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   type SettingsSubTab = 'DOCS' | 'WHATSAPP' | 'EMAIL' | 'BANK' | 'QUOTA' | 'VISIBILITY' | 'BACKGROUNDS' | 'SIGNATURE_STAMP' | 'GENERAL';
   const [settingsSubTab, setSettingsSubTab] = useState<SettingsSubTab>('DOCS');
   const [quotaSaveSuccess, setQuotaSaveSuccess] = useState(false);
+  const [isSavingQuota, setIsSavingQuota] = useState(false);
   const [visibilitySaveSuccess, setVisibilitySaveSuccess] = useState(false);
   const [signatureSaveSuccess, setSignatureSaveSuccess] = useState(false);
+
+  // Sync latest registrations and category quotas whenever Admin Dashboard is mounted or currentAdmin changes
+  useEffect(() => {
+    if (currentAdmin) {
+      refreshDataFromServer().catch(() => {});
+    }
+  }, [currentAdmin, refreshDataFromServer]);
+
+  const handleSaveCategoryQuota = async (cat: CategoryDetail) => {
+    try {
+      setIsSavingQuota(true);
+      await ApiService.saveCategory(cat);
+      updateCategory(cat);
+      await syncCategoryQuotas();
+      setQuotaSaveSuccess(true);
+      setTimeout(() => setQuotaSaveSuccess(false), 3500);
+    } catch (err) {
+      console.warn('Error saving category quota:', err);
+    } finally {
+      setIsSavingQuota(false);
+    }
+  };
+
+  const handleSaveAllCategoriesQuota = async () => {
+    try {
+      setIsSavingQuota(true);
+      await reorderCategories(categories);
+      await syncCategoryQuotas();
+      await refreshDataFromServer();
+      setQuotaSaveSuccess(true);
+      setTimeout(() => setQuotaSaveSuccess(false), 3500);
+    } catch (err) {
+      console.warn('Error saving all category quotas:', err);
+    } finally {
+      setIsSavingQuota(false);
+    }
+  };
+
+  const handleForceSyncQuotas = async () => {
+    try {
+      setIsSavingQuota(true);
+      await syncCategoryQuotas();
+      await refreshDataFromServer();
+      setQuotaSaveSuccess(true);
+      setTimeout(() => setQuotaSaveSuccess(false), 3000);
+    } catch (err) {
+      console.warn('Error syncing quotas:', err);
+    } finally {
+      setIsSavingQuota(false);
+    }
+  };
 
   // Official Invoice Modal State
   const [selectedInvoiceItem, setSelectedInvoiceItem] = useState<RegistrationItem | null>(null);
@@ -3150,11 +3205,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {categories.map((c, idx) => {
-                  const catRegs = registrations.filter(r => r.category === c.id && r.status !== 'REJECTED');
-                  const count = catRegs.length;
+                  const catRegs = registrations.filter(
+                    r => r.category && String(r.category).trim().toUpperCase() === String(c.id).trim().toUpperCase() && r.status !== 'REJECTED'
+                  );
+                  const count = Math.max(catRegs.length, c.registeredTeamsCount || 0);
                   const isFull = count >= c.maxTeams;
                   const remaining = Math.max(0, c.maxTeams - count);
-                  const percent = Math.min(100, Math.round((count / c.maxTeams) * 100));
+                  const percent = c.maxTeams > 0 ? Math.min(100, Math.round((count / c.maxTeams) * 100)) : 100;
 
                   return (
                     <div
@@ -4242,7 +4299,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     let fullCount = 0;
 
                     categories.forEach(c => {
-                      const count = registrations.filter(r => r.category === c.id && r.status !== 'REJECTED').length;
+                      const count = Math.max(
+                        registrations.filter(r => r.category && String(r.category).trim().toUpperCase() === String(c.id).trim().toUpperCase() && r.status !== 'REJECTED').length,
+                        c.registeredTeamsCount || 0
+                      );
                       totalMax += c.maxTeams;
                       totalReg += count;
                       if (count >= c.maxTeams) fullCount++;
@@ -4283,11 +4343,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                   {/* CATEGORIES QUOTA LIST */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {categories.map(cat => {
-                      const activeRegs = registrations.filter(r => r.category === cat.id && r.status !== 'REJECTED');
-                      const regCount = activeRegs.length;
+                      const activeRegs = registrations.filter(
+                        r => r.category && String(r.category).trim().toUpperCase() === String(cat.id).trim().toUpperCase() && r.status !== 'REJECTED'
+                      );
+                      const regCount = Math.max(activeRegs.length, cat.registeredTeamsCount || 0);
                       const isFull = regCount >= cat.maxTeams;
                       const remaining = Math.max(0, cat.maxTeams - regCount);
-                      const percent = Math.min(100, Math.round((regCount / cat.maxTeams) * 100));
+                      const percent = cat.maxTeams > 0 ? Math.min(100, Math.round((regCount / cat.maxTeams) * 100)) : 100;
 
                       const presets = [8, 12, 16, 24, 32, 48, 64];
 
@@ -4340,7 +4402,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                             {isFull && (
                               <p className="text-[11px] text-red-400/90 font-medium flex items-center space-x-1 pt-1">
                                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                <span>Kategori ini otomatis tidak muncul di dropdown formulir pendaftaran publik.</span>
+                                <span>Kategori ini otomatis ditutup dan tidak dapat dipilih di formulir pendaftaran publik.</span>
                               </p>
                             )}
                           </div>
@@ -4431,6 +4493,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                             </div>
                           </div>
 
+                          {/* TEAM PREVIEW IF REGISTERED */}
+                          {activeRegs.length > 0 && (
+                            <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-1.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                Tim Terdaftar ({activeRegs.length} Tim):
+                              </span>
+                              <div className="flex flex-wrap gap-1.5">
+                                {activeRegs.map(r => (
+                                  <span
+                                    key={r.id}
+                                    className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700/60 text-[11px] text-slate-300 font-medium truncate max-w-[200px]"
+                                    title={`${r.teamName} (${r.regCode || '-'}) - Status: ${r.status}`}
+                                  >
+                                    ⚽ {r.teamName}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                           {/* QUICK SAVE ACTION */}
                           <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
                             <span className="text-[11px] text-slate-400">
@@ -4438,14 +4520,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                             </span>
                             <button
                               type="button"
-                              onClick={() => {
-                                setQuotaSaveSuccess(true);
-                                setTimeout(() => setQuotaSaveSuccess(false), 3000);
-                              }}
-                              className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition flex items-center space-x-1.5 cursor-pointer"
+                              disabled={isSavingQuota}
+                              onClick={() => handleSaveCategoryQuota(cat)}
+                              className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
                             >
                               <Check className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>Simpan {cat.id}</span>
+                              <span>{isSavingQuota ? 'Menyimpan...' : `Simpan ${cat.id}`}</span>
                             </button>
                           </div>
                         </div>
@@ -4465,17 +4545,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setQuotaSaveSuccess(true);
-                        setTimeout(() => setQuotaSaveSuccess(false), 3500);
-                      }}
-                      className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition flex items-center justify-center space-x-2 shadow-lg shadow-amber-950/60 cursor-pointer"
-                    >
-                      <Save className="w-4 h-4" />
-                      <span>Simpan Seluruh Pengaturan Kuota</span>
-                    </button>
+                    <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        disabled={isSavingQuota}
+                        onClick={handleForceSyncQuotas}
+                        className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-bold transition flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                        title="Hitung ulang tim terdaftar dari database"
+                      >
+                        <RefreshCw className={`w-4 h-4 text-cyan-400 ${isSavingQuota ? 'animate-spin' : ''}`} />
+                        <span>Sinkronkan Kuota Real-Time</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isSavingQuota}
+                        onClick={handleSaveAllCategoriesQuota}
+                        className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition flex items-center justify-center space-x-2 shadow-lg shadow-amber-950/60 cursor-pointer disabled:opacity-50"
+                      >
+                        <Save className="w-4 h-4" />
+                        <span>{isSavingQuota ? 'Menyimpan...' : 'Simpan Seluruh Pengaturan Kuota'}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

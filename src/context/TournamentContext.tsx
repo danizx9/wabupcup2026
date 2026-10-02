@@ -81,6 +81,7 @@ interface TournamentContextType {
   updateCategory: (category: CategoryDetail) => void;
   deleteCategory: (categoryId: string) => void;
   reorderCategories: (newCategories: CategoryDetail[]) => Promise<void>;
+  syncCategoryQuotas: () => Promise<void>;
   registrations: RegistrationItem[];
   submitNewRegistration: (data: Omit<RegistrationItem, 'id' | 'regCode' | 'registrationDate' | 'status' | 'paymentStatus' | 'lastUpdated'>) => Promise<RegistrationItem>;
   updateRegistration: (item: RegistrationItem) => void;
@@ -715,6 +716,18 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       console.warn('Could not sync reordered categories to backend:', err);
     }
   };
+
+  const syncCategoryQuotas = useCallback(async () => {
+    try {
+      const updatedCategories = await ApiService.syncCategoryQuotas();
+      if (updatedCategories && Array.isArray(updatedCategories)) {
+        setCategories(updatedCategories);
+        safeLocalStorageSet('wabupcup_categories', JSON.stringify(updatedCategories));
+      }
+    } catch (err) {
+      console.warn('Could not sync category quotas with backend:', err);
+    }
+  }, []);
 
   // Payload sanitizer untuk pengiriman data registrasi agar tidak melebihi 4MB
   const prepareRegistrationForApi = (item: RegistrationItem): RegistrationItem => {
@@ -1666,6 +1679,7 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         updateCategory,
         deleteCategory,
         reorderCategories,
+        syncCategoryQuotas,
         registrations,
         submitNewRegistration,
         updateRegistration,

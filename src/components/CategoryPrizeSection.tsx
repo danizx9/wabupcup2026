@@ -135,14 +135,15 @@ export const CategoryPrizeSection: React.FC<CategoryPrizeSectionProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map(cat => {
             const isExpanded = expandedCat === cat.id;
-            const activeRegs = registrations.filter(r => r.category === cat.id && r.status !== 'REJECTED');
-            const registeredCount = activeRegs.length;
+            const activeRegs = registrations.filter(
+              r => r.category && String(r.category).trim().toUpperCase() === String(cat.id).trim().toUpperCase() && r.status !== 'REJECTED'
+            );
+            const registeredCount = Math.max(activeRegs.length, cat.registeredTeamsCount || 0);
             const isFull = registeredCount >= cat.maxTeams;
             const remainingSlots = Math.max(0, cat.maxTeams - registeredCount);
-            const quotaPercent = Math.min(
-              100,
-              Math.round((registeredCount / cat.maxTeams) * 100)
-            );
+            const quotaPercent = cat.maxTeams > 0
+              ? Math.min(100, Math.round((registeredCount / cat.maxTeams) * 100))
+              : 100;
 
             return (
               <div

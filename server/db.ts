@@ -868,38 +868,135 @@ export const Database = {
   },
 
   // Categories
+  async syncCategoryRegisteredCounts(): Promise<void> {
+    if (pool && isMySqlConnected) {
+      try {
+        const [countsRows]: any = await pool.query(
+          "SELECT category_id, COUNT(*) as cnt FROM registrations WHERE status != 'REJECTED' GROUP BY category_id"
+        );
+        const realCounts: Record<string, number> = {};
+        if (Array.isArray(countsRows)) {
+          for (const row of countsRows) {
+            if (row.category_id) {
+              realCounts[String(row.category_id).trim().toUpperCase()] = Number(row.cnt) || 0;
+            }
+          }
+        }
+        const [cats]: any = await pool.query('SELECT id FROM categories');
+        if (Array.isArray(cats)) {
+          for (const c of cats) {
+            const catId = String(c.id).trim().toUpperCase();
+            const count = realCounts[catId] ?? 0;
+            await pool.query('UPDATE categories SET registered_teams_count = ? WHERE id = ?', [count, c.id]);
+          }
+        }
+      } catch (err) {
+        console.warn('[Database] syncCategoryRegisteredCounts MySQL error:', err);
+      }
+    }
+
+    const memCounts: Record<string, number> = {};
+    for (const r of memStore.registrations) {
+      if (r.status !== 'REJECTED' && r.category) {
+        const cat = String(r.category).trim().toUpperCase();
+        memCounts[cat] = (memCounts[cat] || 0) + 1;
+      }
+    }
+    for (const c of memStore.categories) {
+      const cat = String(c.id).trim().toUpperCase();
+      c.registeredTeamsCount = memCounts[cat] ?? 0;
+    }
+    persistLocalStore();
+  },
+
   async getCategories(): Promise<CategoryDetail[]> {
     await ensureDbConnected();
     if (pool && isMySqlConnected) {
       try {
         const [rows]: any = await pool.query('SELECT * FROM categories ORDER BY sort_order ASC, id ASC');
-        return rows.map((r: any) => ({
-          id: r.id,
-          name: r.name,
-          badgeTitle: r.badge_title,
-          ageRestriction: r.age_restriction,
-          maxTeams: r.max_teams,
-          registeredTeamsCount: r.registered_teams_count,
-          registrationFee: Number(r.registration_fee),
-          totalPrize: Number(r.total_prize),
-          description: r.description,
-          prizes: typeof r.prizes_json === 'string' ? JSON.parse(r.prizes_json) : (r.prizes_json || []),
-          rules: typeof r.rules_json === 'string' ? JSON.parse(r.rules_json) : (r.rules_json || []),
-        }));
+        
+        // Dynamically compute the accurate registered teams count from registrations table
+        let realCounts: Record<string, number> = {};
+        try {
+          const [countsRows]: any = await pool.query(
+            "SELECT category_id, COUNT(*) as cnt FROM registrations WHERE status != 'REJECTED' GROUP BY category_id"
+          );
+          if (Array.isArray(countsRows)) {
+            for (const row of countsRows) {
+              if (row.category_id) {
+                realCounts[String(row.category_id).trim().toUpperCase()] = Number(row.cnt) || 0;
+              }
+            }
+          }
+        } catch (cntErr) {
+          console.warn('[Database] Error counting active registrations per category:', cntErr);
+        }
+
+        return rows.map((r: any) => {
+          const catId = String(r.id).trim().toUpperCase();
+          const dynamicCount = realCounts[catId] !== undefined ? realCounts[catId] : (r.registered_teams_count || 0);
+          return {
+            id: r.id,
+            name: r.name,
+            badgeTitle: r.badge_title,
+            ageRestriction: r.age_restriction,
+            maxTeams: r.max_teams,
+            registeredTeamsCount: dynamicCount,
+            registrationFee: Number(r.registration_fee),
+            totalPrize: Number(r.total_prize),
+            description: r.description,
+            prizes: typeof r.prizes_json === 'string' ? JSON.parse(r.prizes_json) : (r.prizes_json || []),
+            rules: typeof r.rules_json === 'string' ? JSON.parse(r.rules_json) : (r.rules_json || []),
+          };
+        });
       } catch (err) {
         console.error('Error getting categories from MySQL:', err);
       }
     }
-    return memStore.categories;
+
+    const memCounts: Record<string, number> = {};
+    for (const r of memStore.registrations) {
+      if (r.status !== 'REJECTED' && r.category) {
+        const cat = String(r.category).trim().toUpperCase();
+        memCounts[cat] = (memCounts[cat] || 0) + 1;
+      }
+    }
+
+    return memStore.categories.map(c => ({
+      ...c,
+      registeredTeamsCount: memCounts[String(c.id).trim().toUpperCase()] !== undefined
+        ? memCounts[String(c.id).trim().toUpperCase()]
+        : (c.registeredTeamsCount || 0),
+    }));
   },
 
   async saveCategory(cat: CategoryDetail): Promise<CategoryDetail> {
     await ensureDbConnected();
-    const idx = memStore.categories.findIndex(c => c.id === cat.id);
-    if (idx >= 0) {
-      memStore.categories[idx] = cat;
+
+    // Preserve or dynamically calculate accurate registeredTeamsCount
+    let realCount = cat.registeredTeamsCount;
+    if (pool && isMySqlConnected) {
+      try {
+        const [cntRows]: any = await pool.query(
+          "SELECT COUNT(*) as cnt FROM registrations WHERE category_id = ? AND status != 'REJECTED'",
+          [cat.id]
+        );
+        if (Array.isArray(cntRows) && cntRows[0]) {
+          realCount = Number(cntRows[0].cnt) || 0;
+        }
+      } catch {}
     } else {
-      memStore.categories.push(cat);
+      realCount = memStore.registrations.filter(
+        r => String(r.category).trim().toUpperCase() === String(cat.id).trim().toUpperCase() && r.status !== 'REJECTED'
+      ).length;
+    }
+    const catToSave = { ...cat, registeredTeamsCount: realCount };
+
+    const idx = memStore.categories.findIndex(c => c.id === catToSave.id);
+    if (idx >= 0) {
+      memStore.categories[idx] = catToSave;
+    } else {
+      memStore.categories.push(catToSave);
     }
     persistLocalStore();
 
@@ -910,15 +1007,15 @@ export const Database = {
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON DUPLICATE KEY UPDATE name=?, badge_title=?, age_restriction=?, max_teams=?, registered_teams_count=?, registration_fee=?, total_prize=?, description=?, prizes_json=?, rules_json=?`,
           [
-            cat.id, cat.name, cat.badgeTitle || '', cat.ageRestriction, cat.maxTeams, cat.registeredTeamsCount, cat.registrationFee, cat.totalPrize, cat.description || '', JSON.stringify(cat.prizes), JSON.stringify(cat.rules),
-            cat.name, cat.badgeTitle || '', cat.ageRestriction, cat.maxTeams, cat.registeredTeamsCount, cat.registrationFee, cat.totalPrize, cat.description || '', JSON.stringify(cat.prizes), JSON.stringify(cat.rules),
+            catToSave.id, catToSave.name, catToSave.badgeTitle || '', catToSave.ageRestriction, catToSave.maxTeams, catToSave.registeredTeamsCount, catToSave.registrationFee, catToSave.totalPrize, catToSave.description || '', JSON.stringify(catToSave.prizes), JSON.stringify(catToSave.rules),
+            catToSave.name, catToSave.badgeTitle || '', catToSave.ageRestriction, catToSave.maxTeams, catToSave.registeredTeamsCount, catToSave.registrationFee, catToSave.totalPrize, catToSave.description || '', JSON.stringify(catToSave.prizes), JSON.stringify(catToSave.rules),
           ]
         );
       } catch (err) {
         console.error('Error saving category to MySQL:', err);
       }
     }
-    return cat;
+    return catToSave;
   },
 
   async deleteCategory(categoryId: string): Promise<boolean> {
@@ -1103,6 +1200,7 @@ export const Database = {
         console.error('[Database] Error saving registration to MySQL:', err);
       }
     }
+    this.syncCategoryRegisteredCounts().catch(() => {});
     return item;
   },
 
@@ -1247,6 +1345,8 @@ export const Database = {
       r => r.id !== regId && r.id !== id && (!regCode || r.regCode !== regCode)
     );
     persistLocalStore();
+
+    this.syncCategoryRegisteredCounts().catch(() => {});
 
     return true;
   },

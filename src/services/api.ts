@@ -156,6 +156,14 @@ export const ApiService = {
     });
   },
 
+  async syncCategoryQuotas(): Promise<CategoryDetail[] | null> {
+    const res = await safeJsonFetch<{ success: boolean; categories: CategoryDetail[] }>(`${API_BASE}/categories/sync-quota`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return res ? res.categories : null;
+  },
+
   async reorderCategories(categories: CategoryDetail[]): Promise<CategoryDetail[] | null> {
     const res = await safeJsonFetch<{ success: boolean; categories: CategoryDetail[] }>(`${API_BASE}/categories/reorder`, {
       method: 'POST',
