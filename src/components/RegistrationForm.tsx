@@ -51,7 +51,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     const catObj = categories.find(
       c => String(c.id).trim().toUpperCase() === String(catId).trim().toUpperCase()
     );
-    return Math.max(activeRegs.length, catObj?.registeredTeamsCount || 0);
+    return activeRegs.length;
   };
 
   // Helper to determine if a category's quota is full
