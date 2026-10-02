@@ -23,7 +23,7 @@ interface CategoryPrizeSectionProps {
 export const CategoryPrizeSection: React.FC<CategoryPrizeSectionProps> = ({
   onSelectCategoryToRegister,
 }) => {
-  const { categories, config, registrations } = useTournament();
+  const { categories, config, registrations, currentAdmin } = useTournament();
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
 
   const toggleExpand = (catId: string) => {
@@ -135,10 +135,11 @@ export const CategoryPrizeSection: React.FC<CategoryPrizeSectionProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {categories.map(cat => {
             const isExpanded = expandedCat === cat.id;
-            const activeRegs = registrations.filter(
-              r => r.category && String(r.category).trim().toUpperCase() === String(cat.id).trim().toUpperCase() && r.status !== 'REJECTED'
-            );
-            const registeredCount = activeRegs.length;
+            const registeredCount = currentAdmin
+              ? registrations.filter(
+                  r => r.category && String(r.category).trim().toUpperCase() === String(cat.id).trim().toUpperCase() && r.status !== 'REJECTED'
+                ).length
+              : (cat.registeredTeamsCount || 0);
             const isFull = registeredCount >= cat.maxTeams;
             const remainingSlots = Math.max(0, cat.maxTeams - registeredCount);
             const quotaPercent = cat.maxTeams > 0

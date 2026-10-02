@@ -41,17 +41,20 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   onClose,
   preselectedCategory = 'SMA',
 }) => {
-  const { config, categories, registrations, submitNewRegistration, getWhatsAppNotificationUrl, committeeContacts } = useTournament();
+  const { config, categories, registrations, submitNewRegistration, getWhatsAppNotificationUrl, committeeContacts, currentAdmin } = useTournament();
 
   // Helper to calculate real-time registered count for a category
   const getCategoryCount = (catId: TournamentCategory) => {
-    const activeRegs = registrations.filter(
-      r => r.category && String(r.category).trim().toUpperCase() === String(catId).trim().toUpperCase() && r.status !== 'REJECTED'
-    );
     const catObj = categories.find(
       c => String(c.id).trim().toUpperCase() === String(catId).trim().toUpperCase()
     );
-    return activeRegs.length;
+    if (currentAdmin) {
+      const activeRegs = registrations.filter(
+        r => r.category && String(r.category).trim().toUpperCase() === String(catId).trim().toUpperCase() && r.status !== 'REJECTED'
+      );
+      return activeRegs.length;
+    }
+    return catObj?.registeredTeamsCount || 0;
   };
 
   // Helper to determine if a category's quota is full

@@ -65,7 +65,8 @@ export const ScheduleBracketSection: React.FC<ScheduleBracketSectionProps> = ({
   const displayFinals = finalMatches;
 
   const currentCatDetail = categories.find(c => c.id === selectedCat);
-  const selectedCatCount = catRegistrations.length;
+  const { currentAdmin } = useTournament();
+  const selectedCatCount = currentAdmin ? catRegistrations.length : (currentCatDetail?.registeredTeamsCount || 0);
   const isSelectedCatFull = currentCatDetail ? selectedCatCount >= currentCatDetail.maxTeams : false;
 
   const bgConfig = config.sectionsBackgrounds?.bracket;
