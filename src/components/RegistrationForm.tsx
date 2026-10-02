@@ -23,6 +23,7 @@ import {
   FileCheck,
   Building,
   UserCheck,
+  RefreshCw,
   Mail,
   Lock,
   MessageCircle,
@@ -112,6 +113,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [submittedItem, setSubmittedItem] = useState<any | null>(null);
+  const [quotaError, setQuotaError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
   // Stable registration ID generated for this form session so all uploaded files are linked directly to ref_id in TiDB Cloud
@@ -379,7 +381,16 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       setSubmittedItem(newRegistration);
     } catch (err: any) {
       console.error('Registration submission error:', err);
-      alert(err.message || 'Terjadi kesalahan saat memproses pendaftaran. Silakan coba lagi.');
+      const errMsg = err.message || 'Terjadi kesalahan saat memproses pendaftaran. Silakan coba lagi.';
+      if (errMsg.toLowerCase().includes('kuota') || errMsg.toLowerCase().includes('penuh')) {
+        setQuotaError(errMsg);
+        // Otomatis refresh setelah 7 detik
+        setTimeout(() => {
+          window.location.reload();
+        }, 7000);
+      } else {
+        alert(errMsg);
+      }
     } finally {
       setIsSubmitting(false);
       submittingRef.current = false;
@@ -427,8 +438,45 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           </button>
         </div>
 
-        {/* SUBMITTED SUCCESS POPUP VIEW */}
-        {submittedItem ? (
+        {/* QUOTA FULL ERROR VIEW */}
+        {quotaError ? (
+          <div className="p-6 sm:p-10 space-y-6 animate-fadeIn text-center">
+            <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-950/80 text-red-600 dark:text-red-400 mx-auto flex items-center justify-center shadow-lg shadow-red-500/20 border-4 border-red-50 dark:border-red-900/30">
+              <AlertCircle className="w-10 h-10" />
+            </div>
+
+            <div>
+              <span className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400 block mb-2">
+                Pendaftaran Ditolak Otomatis
+              </span>
+              <h4 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+                Mohon Maaf, Kuota Penuh
+              </h4>
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-lg mx-auto font-medium">
+                {quotaError}
+              </p>
+              
+              <div className="mt-6 bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-200 dark:border-red-900/30 text-left max-w-lg mx-auto flex items-start space-x-3">
+                <div className="mt-0.5"><AlertCircle className="w-5 h-5 text-red-500" /></div>
+                <div>
+                  <h5 className="font-bold text-red-800 dark:text-red-300 text-sm">Informasi Sistem</h5>
+                  <p className="text-xs text-red-600 dark:text-red-400/80 mt-1 leading-relaxed">
+                    Pendaftaran untuk kategori ini baru saja ditutup oleh admin karena jumlah tim pendaftar telah mencapai batas maksimum (Full Slot). Data pendaftaran Anda dibatalkan secara aman.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 mx-auto px-8 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white text-sm font-bold transition flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <RefreshCw className="w-4 h-4 animate-spin-slow" />
+              <span>Kembali ke Beranda & Refresh</span>
+            </button>
+            <p className="text-[10px] text-slate-400 pt-2 animate-pulse">Halaman akan otomatis dimuat ulang dalam beberapa detik...</p>
+          </div>
+        ) : submittedItem ? (
           <div className="p-6 sm:p-8 space-y-6 animate-fadeIn text-center">
             <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center text-3xl shadow-lg shadow-emerald-500/20">
               ✓
