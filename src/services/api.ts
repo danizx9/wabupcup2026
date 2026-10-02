@@ -187,12 +187,23 @@ export const ApiService = {
     return safeJsonFetch<RegistrationItem[]>(`${API_BASE}/registrations`);
   },
 
-  async createRegistration(data: Partial<RegistrationItem>): Promise<RegistrationItem | null> {
-    return safeJsonFetch<RegistrationItem>(`${API_BASE}/registrations`, {
+  async createRegistration(data: Partial<RegistrationItem>): Promise<RegistrationItem> {
+    const res = await fetch(`${API_BASE}/registrations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      throw new Error(`Server error: ${text.substring(0, 100)}`);
+    }
+    if (!res.ok) {
+      throw new Error(json.error || 'Gagal menyimpan pendaftaran');
+    }
+    return json;
   },
 
   async updateRegistration(item: RegistrationItem): Promise<RegistrationItem | null> {

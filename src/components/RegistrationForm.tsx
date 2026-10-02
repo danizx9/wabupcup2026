@@ -377,9 +377,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       } catch (err) {}
 
       setSubmittedItem(newRegistration);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Registration submission error:', err);
-      alert('Terjadi kesalahan saat memproses pendaftaran. Silakan coba lagi.');
+      alert(err.message || 'Terjadi kesalahan saat memproses pendaftaran. Silakan coba lagi.');
     } finally {
       setIsSubmitting(false);
       submittingRef.current = false;

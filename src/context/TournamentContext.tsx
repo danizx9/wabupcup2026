@@ -815,8 +815,10 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         setRegistrations(prev => [currentReg, ...prev.filter(r => r.id !== currentReg.id && r.id !== generatedId)]);
         idbSaveRegistration(currentReg).catch(() => {});
       }
-    } catch (err) {
-      console.warn('Could not persist new registration to backend, using local copy:', err);
+    } catch (err: any) {
+      // Rollback optimistic update if server rejects
+      setRegistrations(prev => prev.filter(r => r.id !== currentReg.id && r.id !== generatedId));
+      throw err;
     }
 
     setCategories(prev => {
@@ -825,12 +827,11 @@ export const TournamentProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           ? { ...c, registeredTeamsCount: c.registeredTeamsCount + 1 }
           : c
       );
-      const updatedCat = next.find(c => c.id === data.category);
-      if (updatedCat) {
-        ApiService.saveCategory(updatedCat).catch(() => {});
-      }
       return next;
     });
+    
+    // Sinkronisasikan secara diam-diam dengan backend untuk berjaga-jaga
+    syncCategoryQuotas().catch(() => {});
 
     return currentReg;
   };
