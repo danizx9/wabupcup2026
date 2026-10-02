@@ -659,7 +659,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     </label>
                     {currentCatDetail && (
                       <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                        Sisa {Math.max(0, currentCatDetail.maxTeams - getCategoryCount(currentCatDetail.id))} Slot ({getCategoryCount(currentCatDetail.id)}/{currentCatDetail.maxTeams} Tim)
+                        Sisa {Math.max(0, currentCatDetail.maxTeams - getCategoryCount(currentCatDetail.id))} Slot
                       </span>
                     )}
                   </div>
