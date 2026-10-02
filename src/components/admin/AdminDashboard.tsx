@@ -343,6 +343,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const handleForceSyncQuotas = async () => {
     try {
       setIsSavingQuota(true);
+      await reorderCategories(categories);
       await syncCategoryQuotas();
       await refreshDataFromServer();
       setQuotaSaveSuccess(true);
