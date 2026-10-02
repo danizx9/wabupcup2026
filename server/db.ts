@@ -884,11 +884,12 @@ export const Database = {
         }
         const [cats]: any = await pool.query('SELECT id FROM categories');
         if (Array.isArray(cats)) {
-          for (const c of cats) {
+          const updatePromises = cats.map(c => {
             const catId = String(c.id).trim().toUpperCase();
             const count = realCounts[catId] ?? 0;
-            await pool.query('UPDATE categories SET registered_teams_count = ? WHERE id = ?', [count, c.id]);
-          }
+            return pool.query('UPDATE categories SET registered_teams_count = ? WHERE id = ?', [count, c.id]);
+          });
+          await Promise.all(updatePromises);
         }
       } catch (err) {
         console.warn('[Database] syncCategoryRegisteredCounts MySQL error:', err);
@@ -1038,9 +1039,8 @@ export const Database = {
     persistLocalStore();
     if (pool && isMySqlConnected) {
       try {
-        for (let i = 0; i < categories.length; i++) {
-          const cat = categories[i];
-          await pool.query(
+        const updatePromises = categories.map((cat, i) => {
+          return pool!.query(
             `INSERT INTO categories (id, name, badge_title, age_restriction, max_teams, registered_teams_count, registration_fee, total_prize, description, prizes_json, rules_json, sort_order)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE sort_order = ?, name = ?, max_teams = ?, registration_fee = ?, total_prize = ?`,
@@ -1049,7 +1049,8 @@ export const Database = {
               i, cat.name, cat.maxTeams, cat.registrationFee, cat.totalPrize,
             ]
           );
-        }
+        });
+        await Promise.all(updatePromises);
       } catch (err) {
         console.error('Error reordering categories in MySQL:', err);
       }
