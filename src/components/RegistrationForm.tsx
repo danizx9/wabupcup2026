@@ -50,7 +50,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     );
     if (currentAdmin) {
       const activeRegs = registrations.filter(
-        r => r.category && String(r.category).trim().toUpperCase() === String(catId).trim().toUpperCase() && r.status !== 'REJECTED'
+        r => r.category && String(r.category).trim().toUpperCase() === String(catId).trim().toUpperCase()
       );
       return activeRegs.length;
     }

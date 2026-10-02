@@ -273,7 +273,7 @@ apiRouter.post('/registrations', async (req: Request, res: Response) => {
     );
     if (targetCat) {
       const activeInCat = existing.filter(
-        r => r.category && String(r.category).trim().toUpperCase() === String(data.category).trim().toUpperCase() && r.status !== 'REJECTED'
+        r => r.category && String(r.category).trim().toUpperCase() === String(data.category).trim().toUpperCase()
       );
       if (activeInCat.length >= targetCat.maxTeams) {
         return res.status(400).json({

@@ -3206,7 +3206,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {categories.map((c, idx) => {
                   const catRegs = registrations.filter(
-                    r => r.category && String(r.category).trim().toUpperCase() === String(c.id).trim().toUpperCase() && r.status !== 'REJECTED'
+                    r => r.category && String(r.category).trim().toUpperCase() === String(c.id).trim().toUpperCase()
                   );
                   const count = catRegs.length;
                   const isFull = count >= c.maxTeams;
@@ -4299,7 +4299,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     let fullCount = 0;
 
                     categories.forEach(c => {
-                      const count = registrations.filter(r => r.category && String(r.category).trim().toUpperCase() === String(c.id).trim().toUpperCase() && r.status !== 'REJECTED').length;
+                      const count = registrations.filter(r => r.category && String(r.category).trim().toUpperCase() === String(c.id).trim().toUpperCase()).length;
                       totalMax += c.maxTeams;
                       totalReg += count;
                       if (count >= c.maxTeams) fullCount++;
@@ -4341,7 +4341,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {categories.map(cat => {
                       const activeRegs = registrations.filter(
-                        r => r.category && String(r.category).trim().toUpperCase() === String(cat.id).trim().toUpperCase() && r.status !== 'REJECTED'
+                        r => r.category && String(r.category).trim().toUpperCase() === String(cat.id).trim().toUpperCase()
                       );
                       const regCount = activeRegs.length;
                       const isFull = regCount >= cat.maxTeams;

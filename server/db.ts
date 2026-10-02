@@ -872,7 +872,7 @@ export const Database = {
     if (pool && isMySqlConnected) {
       try {
         const [countsRows]: any = await pool.query(
-          "SELECT category_id, COUNT(*) as cnt FROM registrations WHERE status != 'REJECTED' GROUP BY category_id"
+          "SELECT category_id, COUNT(*) as cnt FROM registrations GROUP BY category_id"
         );
         const realCounts: Record<string, number> = {};
         if (Array.isArray(countsRows)) {
@@ -897,7 +897,7 @@ export const Database = {
 
     const memCounts: Record<string, number> = {};
     for (const r of memStore.registrations) {
-      if (r.status !== 'REJECTED' && r.category) {
+      if (r.category) {
         const cat = String(r.category).trim().toUpperCase();
         memCounts[cat] = (memCounts[cat] || 0) + 1;
       }
@@ -919,7 +919,7 @@ export const Database = {
         let realCounts: Record<string, number> = {};
         try {
           const [countsRows]: any = await pool.query(
-            "SELECT category_id, COUNT(*) as cnt FROM registrations WHERE status != 'REJECTED' GROUP BY category_id"
+            "SELECT category_id, COUNT(*) as cnt FROM registrations GROUP BY category_id"
           );
           if (Array.isArray(countsRows)) {
             for (const row of countsRows) {
@@ -956,7 +956,7 @@ export const Database = {
 
     const memCounts: Record<string, number> = {};
     for (const r of memStore.registrations) {
-      if (r.status !== 'REJECTED' && r.category) {
+      if (r.category) {
         const cat = String(r.category).trim().toUpperCase();
         memCounts[cat] = (memCounts[cat] || 0) + 1;
       }
@@ -978,7 +978,7 @@ export const Database = {
     if (pool && isMySqlConnected) {
       try {
         const [cntRows]: any = await pool.query(
-          "SELECT COUNT(*) as cnt FROM registrations WHERE category_id = ? AND status != 'REJECTED'",
+          "SELECT COUNT(*) as cnt FROM registrations WHERE category_id = ?",
           [cat.id]
         );
         if (Array.isArray(cntRows) && cntRows[0]) {
@@ -987,7 +987,7 @@ export const Database = {
       } catch {}
     } else {
       realCount = memStore.registrations.filter(
-        r => String(r.category).trim().toUpperCase() === String(cat.id).trim().toUpperCase() && r.status !== 'REJECTED'
+        r => String(r.category).trim().toUpperCase() === String(cat.id).trim().toUpperCase()
       ).length;
     }
     const catToSave = { ...cat, registeredTeamsCount: realCount };

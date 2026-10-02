@@ -137,7 +137,7 @@ export const CategoryPrizeSection: React.FC<CategoryPrizeSectionProps> = ({
             const isExpanded = expandedCat === cat.id;
             const registeredCount = currentAdmin
               ? registrations.filter(
-                  r => r.category && String(r.category).trim().toUpperCase() === String(cat.id).trim().toUpperCase() && r.status !== 'REJECTED'
+                  r => r.category && String(r.category).trim().toUpperCase() === String(cat.id).trim().toUpperCase()
                 ).length
               : (cat.registeredTeamsCount || 0);
             const isFull = registeredCount >= cat.maxTeams;
