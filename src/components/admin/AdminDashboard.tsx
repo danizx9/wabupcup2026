@@ -313,13 +313,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const handleSaveCategoryQuota = async (cat: CategoryDetail) => {
     try {
       setIsSavingQuota(true);
-      await ApiService.saveCategory(cat);
+      const res = await ApiService.saveCategory(cat);
+      if (!res) throw new Error("Gagal menghubungi server");
       updateCategory(cat);
       await syncCategoryQuotas();
       setQuotaSaveSuccess(true);
       setTimeout(() => setQuotaSaveSuccess(false), 3500);
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Error saving category quota:', err);
+      alert('Gagal menyimpan kuota. Silakan periksa koneksi internet Anda dan coba lagi.');
     } finally {
       setIsSavingQuota(false);
     }
@@ -335,6 +337,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
       setTimeout(() => setQuotaSaveSuccess(false), 3500);
     } catch (err) {
       console.warn('Error saving all category quotas:', err);
+      alert('Gagal menyimpan seluruh kuota. Silakan coba lagi.');
     } finally {
       setIsSavingQuota(false);
     }
@@ -350,6 +353,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
       setTimeout(() => setQuotaSaveSuccess(false), 3000);
     } catch (err) {
       console.warn('Error syncing quotas:', err);
+      alert('Gagal mensinkronisasi kuota. Silakan coba lagi.');
     } finally {
       setIsSavingQuota(false);
     }
