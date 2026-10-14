@@ -1058,6 +1058,31 @@ export const Database = {
     return categories;
   },
 
+  // Helper to map DB row to RegistrationItem
+  mapRegistrationRow(r: any): RegistrationItem {
+    return {
+      id: r.id,
+      regCode: r.reg_code,
+      category: r.category_id,
+      teamName: r.team_name,
+      teamLogo: r.team_logo || undefined,
+      institutionName: r.institution_name,
+      coachName: r.coach_name,
+      coachPhone: r.coach_phone,
+      coachEmail: r.coach_email || '',
+      playerCount: r.player_count,
+      officialCount: r.official_count,
+      registrationDate: r.registration_date,
+      status: r.status,
+      paymentStatus: r.payment_status,
+      paymentAmount: Number(r.payment_amount),
+      rejectionReason: r.rejection_reason || undefined,
+      adminNotes: r.admin_notes || undefined,
+      documents: typeof r.documents_json === 'string' ? JSON.parse(r.documents_json) : (r.documents_json || {}),
+      lastUpdated: r.last_updated || r.registration_date,
+    };
+  },
+
   // Registrations
   async getRegistrations(): Promise<RegistrationItem[]> {
     await ensureDbConnected();
@@ -1065,33 +1090,77 @@ export const Database = {
       try {
         const [rows]: any = await pool.query('SELECT * FROM registrations ORDER BY created_at DESC');
         if (Array.isArray(rows)) {
-          return rows.map((r: any) => ({
-            id: r.id,
-            regCode: r.reg_code,
-            category: r.category_id,
-            teamName: r.team_name,
-            teamLogo: r.team_logo || undefined,
-            institutionName: r.institution_name,
-            coachName: r.coach_name,
-            coachPhone: r.coach_phone,
-            coachEmail: r.coach_email || '',
-            playerCount: r.player_count,
-            officialCount: r.official_count,
-            registrationDate: r.registration_date,
-            status: r.status,
-            paymentStatus: r.payment_status,
-            paymentAmount: Number(r.payment_amount),
-            rejectionReason: r.rejection_reason || undefined,
-            adminNotes: r.admin_notes || undefined,
-            documents: typeof r.documents_json === 'string' ? JSON.parse(r.documents_json) : (r.documents_json || {}),
-            lastUpdated: r.last_updated || r.registration_date,
-          }));
+          return rows.map((r: any) => this.mapRegistrationRow(r));
         }
       } catch (err) {
         console.error('Error fetching registrations from MySQL:', err);
       }
     }
     return memStore.registrations;
+  },
+
+  async searchRegistrations(query: string): Promise<RegistrationItem[]> {
+    await ensureDbConnected();
+    const cleanQuery = (query || '').trim();
+    if (!cleanQuery) return [];
+
+    const lowerQuery = cleanQuery.toLowerCase();
+    const digitsOnly = cleanQuery.replace(/\D/g, '');
+    let phoneSuffix = digitsOnly;
+    if (phoneSuffix.startsWith('62')) {
+      phoneSuffix = phoneSuffix.substring(2);
+    } else if (phoneSuffix.startsWith('0')) {
+      phoneSuffix = phoneSuffix.substring(1);
+    }
+
+    if (pool && isMySqlConnected) {
+      try {
+        let sql = `
+          SELECT * FROM registrations 
+          WHERE LOWER(reg_code) = ? 
+             OR LOWER(reg_code) LIKE ? 
+             OR LOWER(team_name) LIKE ? 
+             OR coach_phone LIKE ?
+        `;
+        const params: any[] = [
+          lowerQuery,
+          `%${lowerQuery}%`,
+          `%${lowerQuery}%`,
+          `%${cleanQuery}%`,
+        ];
+
+        if (phoneSuffix && phoneSuffix.length >= 5) {
+          sql += ` OR REPLACE(REPLACE(REPLACE(REPLACE(coach_phone, '-', ''), ' ', ''), '+', ''), '.', '') LIKE ?`;
+          params.push(`%${phoneSuffix}%`);
+        }
+
+        sql += ` ORDER BY created_at DESC LIMIT 20`;
+
+        const [rows]: any = await pool.query(sql, params);
+        if (Array.isArray(rows) && rows.length > 0) {
+          return rows.map((r: any) => this.mapRegistrationRow(r));
+        }
+      } catch (err) {
+        console.error('Error searching registrations in MySQL:', err);
+      }
+    }
+
+    // Fallback to memStore
+    return memStore.registrations.filter(r => {
+      if (!r) return false;
+      const lowerCode = (r.regCode || '').toLowerCase().trim();
+      const lowerName = (r.teamName || '').toLowerCase().trim();
+      const rawPhone = (r.coachPhone || '').trim();
+      const cleanPhoneDigits = rawPhone.replace(/\D/g, '');
+
+      const codeMatch = lowerCode === lowerQuery || lowerCode.includes(lowerQuery);
+      const nameMatch = lowerName.includes(lowerQuery);
+      let phoneMatch = rawPhone.includes(cleanQuery);
+      if (digitsOnly && cleanPhoneDigits.includes(digitsOnly)) phoneMatch = true;
+      if (phoneSuffix && phoneSuffix.length >= 5 && cleanPhoneDigits.includes(phoneSuffix)) phoneMatch = true;
+
+      return codeMatch || nameMatch || phoneMatch;
+    });
   },
 
   async saveRegistration(item: RegistrationItem): Promise<RegistrationItem> {

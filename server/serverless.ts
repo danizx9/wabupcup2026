@@ -44,6 +44,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     fullUrl.includes('/admins') ||
     fullUrl.includes('/auth') ||
     fullUrl.includes('/database') ||
+    fullUrl.includes('/check-status') ||
     req.headers.authorization
   ) {
     res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');

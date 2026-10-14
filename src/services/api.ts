@@ -187,6 +187,27 @@ export const ApiService = {
     return safeJsonFetch<RegistrationItem[]>(`${API_BASE}/registrations`);
   },
 
+  async checkRegistrationStatus(query: string): Promise<RegistrationItem[]> {
+    try {
+      const res = await fetch(`${API_BASE}/registrations/check-status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+      if (!res.ok) {
+        return [];
+      }
+      const json = await res.json();
+      if (json && Array.isArray(json.data)) {
+        return json.data;
+      }
+      return [];
+    } catch (err) {
+      console.warn('[ApiService] Error checking registration status:', err);
+      return [];
+    }
+  },
+
   async createRegistration(data: Partial<RegistrationItem>): Promise<RegistrationItem> {
     const res = await fetch(`${API_BASE}/registrations`, {
       method: 'POST',

@@ -249,6 +249,35 @@ apiRouter.get('/registrations', async (req: Request, res: Response) => {
   res.json(list);
 });
 
+// Endpoint publik untuk cek status berkas pendaftaran pendaftar
+apiRouter.get('/registrations/check-status', async (req: Request, res: Response) => {
+  try {
+    const query = (req.query.q || req.query.query || '').toString().trim();
+    if (!query) {
+      return res.status(400).json({ error: 'Parameter pencarian (q) diperlukan.' });
+    }
+    const results = await Database.searchRegistrations(query);
+    res.json({ success: true, count: results.length, data: results });
+  } catch (err: any) {
+    console.error('[API] Error in GET /api/registrations/check-status:', err);
+    res.status(500).json({ error: err?.message || 'Gagal mencari data pendaftaran' });
+  }
+});
+
+apiRouter.post('/registrations/check-status', async (req: Request, res: Response) => {
+  try {
+    const query = (req.body.q || req.body.query || '').toString().trim();
+    if (!query) {
+      return res.status(400).json({ error: 'Parameter pencarian diperlukan.' });
+    }
+    const results = await Database.searchRegistrations(query);
+    res.json({ success: true, count: results.length, data: results });
+  } catch (err: any) {
+    console.error('[API] Error in POST /api/registrations/check-status:', err);
+    res.status(500).json({ error: err?.message || 'Gagal mencari data pendaftaran' });
+  }
+});
+
 apiRouter.post('/registrations', async (req: Request, res: Response) => {
   try {
     const data = req.body;
