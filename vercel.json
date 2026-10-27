@@ -2,6 +2,13 @@
   "version": 2,
   "outputDirectory": "dist",
   "cleanUrls": true,
+   "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "https://wabupcup-2026.vercel.app",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",
