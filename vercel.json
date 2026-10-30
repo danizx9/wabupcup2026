@@ -2,10 +2,10 @@
   "version": 2,
   "outputDirectory": "dist",
   "cleanUrls": true,
-   "redirects": [
+  "redirects": [
     {
       "source": "/(.*)",
-      "destination": "https://wabupcup-2026.vercel.app",
+      "destination": "https://wabup-cup2026.vercel.app",
       "permanent": true
     }
   ],
